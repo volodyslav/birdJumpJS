@@ -1,0 +1,1 @@
+const pipeAmount = 4;

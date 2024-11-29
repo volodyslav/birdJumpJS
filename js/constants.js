@@ -1,4 +1,4 @@
-const pipeAmount = 10;
+const pipeAmount = 400;
 
 // size random
 const pipeHeightTop = [400, 200, 100, 300];

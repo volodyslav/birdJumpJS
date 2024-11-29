@@ -11,22 +11,15 @@ const containerDiv = document.querySelector(".container");
 const birdDiv = document.querySelector(".bird");
 const birdRect = birdDiv.getBoundingClientRect();
 
-// Debug 
-const textTouch = document.querySelector(".touch");
-textTouch.textContent = "Touch count: ";
-let touchCount = 0;
-
 // Score
 let score = 0;
 const scoreText = document.querySelector(".score");
 const startButton = document.querySelector(".start");
 
-startGame = false; // fset game false
-score = 0;
 startButton.addEventListener("click", () => {
     if (!startGame){
-        startGame = true; // Toggle the game state
-        console.log("Game Started:", startGame);
+        score = 0;
+        startGame = true; // Toggle the game stat
         startButton.disabled = true; 
         createPipes()
         moveBird()
@@ -34,14 +27,10 @@ startButton.addEventListener("click", () => {
 });
 
 function stopGame() {
-    startGame = false; // Set the game state to false
-    startButton.disabled = false; // Enable the start button to allow restarting
-    clearInterval(birdIntervalDown); // Clear the bird movement interval
-    document.removeEventListener("keydown", birdIntervalUp); // Remove the space key handler
-    containerDiv.querySelectorAll(".pipe").forEach(pipe => pipe.remove()); // Remove all pipes
-    console.log("Game stopped.");
+    location.reload(true);
+    startGame = false; // reset game false
+    startButton.disabled = false;
 }
-
 
 function moveBird() {
     const birdIntervalDown = setInterval(() => {
@@ -49,8 +38,10 @@ function moveBird() {
         birdDiv.style.top = `${birdTop}%`;
         if (birdTop <= 0 || birdTop >= 100) {
             clearInterval(birdIntervalDown); 
-            console.log("Bird hit the boundary!");
-            stopGame(); 
+            scoreText.textContent = `Your Lose!`;
+            setTimeout(() => {
+                stopGame();
+            }, 3000)
         }
     }, 40); 
     birdIntervalUp = (event) => {
@@ -59,8 +50,10 @@ function moveBird() {
             birdDiv.style.top = `${birdTop}%`;
             if (birdTop <= 0 || birdTop >= 100) {
                 clearInterval(birdIntervalDown); 
-                console.log("Bird hit the boundary!");
-                stopGame();
+                scoreText.textContent = `Your Lose!`;
+                setTimeout(() => {
+                    stopGame();
+                }, 3000)
             } 
         }
     }
@@ -69,8 +62,7 @@ function moveBird() {
 
 function movePipe(){
     // create the pipe element
-    const randomPipeSize = Math.floor(Math.random() * pipeHeightTop.length);  
-
+    const randomPipeSize = Math.floor(Math.random() * pipeHeightTop.length); 
     // Top pipe
     const pipeDivTop = document.createElement("div");
     pipeDivTop.style.height = `${pipeHeightTop[randomPipeSize]}px`;
@@ -102,9 +94,6 @@ function movePipe(){
         const pipeRectTop = pipeDivTop.getBoundingClientRect();
         const pipeRectBottom = pipeDivBottom.getBoundingClientRect();
         if ((birdRect.right > pipeRectTop.left && birdRect.left < pipeRectTop.right && birdRect.bottom > pipeRectTop.top && birdRect.top < pipeRectTop.bottom) || (birdRect.right > pipeRectBottom.left && birdRect.left < pipeRectBottom.right && birdRect.bottom > pipeRectBottom.top && birdRect.top < pipeRectBottom.bottom)) {
-            touchCount++
-            textTouch.textContent = `Touch count: ${touchCount}`
-            console.log("Touch!"); // Collision detected
             stopGame();  // Stop the game when collision detected
             clearInterval(collisionCheckInterval); // Stop checking after collision
         }
@@ -117,7 +106,40 @@ function createPipes(){
             movePipe();
             score++;
             scoreText.textContent = `Score: ${score}`;
+            if (score === pipeAmount){
+                scoreText.textContent = `Congratulations! You win`;
+                setTimeout(() => {
+                    stopGame();
+                }, 3000)
+                clearInterval(birdIntervalDown);
+                clearInterval(birdIntervalUp);
+                document.removeEventListener("keydown", birdIntervalUp); // Stop listening to keyboard inputs when game over
+            }
         }, i * 2000)
     }  
 }
 
+// Load the sound classifier model
+const classifier = ml5.soundClassifier('SpeechCommands18w', () => {
+    console.log('Model Loaded!');
+    classifySound();
+});
+
+function classifySound() {
+    classifier.classifyStart((results) => {
+        // Display the most likely wor
+        if (results[0].label === "up" && startGame){
+            const resultDiv = document.querySelector('.result');
+            resultDiv.textContent = `Label: ${results[0].label}, Confidence: ${results[0].confidence.toFixed(2)}`;
+            birdTop += speedUp;
+            birdDiv.style.top = `${birdTop}%`;
+            if (birdTop <= 0 || birdTop >= 100) {
+                clearInterval(birdIntervalDown); 
+                scoreText.textContent = `Your Lose!`;
+                setTimeout(() => {
+                    stopGame();
+                }, 3000)
+            } 
+        }
+    });
+  }
